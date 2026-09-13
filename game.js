@@ -29,6 +29,7 @@
   let audioContext;
   let musicTimer;
   let musicOn = true;
+  let soundAvailable = true;
 
   const player = {
     x: 150, y: 450, w: 72, h: 82, vx: 0, vy: 0, face: 1, grounded: false,
@@ -146,38 +147,65 @@
       }
 
       function playBark() {
+        if (!soundAvailable) return;
+        ensureAudio();
         if (!audioContext) return;
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        oscillator.type = "square";
-        oscillator.frequency.setValueAtTime(240, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(120, audioContext.currentTime + .12);
-        gain.gain.setValueAtTime(.045, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .13);
-        oscillator.connect(gain).connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + .14);
-      }
-
-      function startMusic() {
-        if (!musicOn) return;
-        audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-        audioContext.resume();
-        if (musicTimer) return;
-        const notes = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23];
-        let step = 0;
-        musicTimer = setInterval(() => {
-          if (mode !== "playing" || !musicOn) return;
+        try {
           const oscillator = audioContext.createOscillator();
           const gain = audioContext.createGain();
           oscillator.type = "square";
-          oscillator.frequency.value = notes[step++ % notes.length];
-          gain.gain.setValueAtTime(.018, audioContext.currentTime);
-          gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .16);
+          oscillator.frequency.setValueAtTime(240, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(120, audioContext.currentTime + .12);
+          gain.gain.setValueAtTime(.045, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .13);
           oscillator.connect(gain).connect(audioContext.destination);
           oscillator.start();
-          oscillator.stop(audioContext.currentTime + .17);
+          oscillator.stop(audioContext.currentTime + .14);
+        } catch {
+          soundAvailable = false;
+        }
+      }
+
+      function startMusic() {
+        if (!musicOn || !soundAvailable) return;
+        ensureAudio();
+        if (!audioContext) return;
+        audioContext.resume().catch(() => { soundAvailable = false; });
+        if (musicTimer) return;
+        const notes = [261.63, 329.63, 392, 523.25, 392, 329.63, 293.66, 349.23];
+        let step = 0;
+        musicTimer = setInterval(() => {
+          if (mode !== "playing" || !musicOn) return;
+          try {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.type = "square";
+            oscillator.frequency.value = notes[step++ % notes.length];
+            gain.gain.setValueAtTime(.045, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .16);
+            oscillator.connect(gain).connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + .17);
+          } catch {
+            soundAvailable = false;
+            clearInterval(musicTimer);
+            musicTimer = undefined;
+          }
         }, 240);
+      }
+
+      function ensureAudio() {
+        if (audioContext || !soundAvailable) return;
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) {
+          soundAvailable = false;
+          return;
+        }
+        try {
+          audioContext = new AudioCtor();
+        } catch {
+          soundAvailable = false;
+        }
       }
     });
     if (boss.alive && rectsOverlap(hit, boss)) {
