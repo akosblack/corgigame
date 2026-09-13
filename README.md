@@ -34,6 +34,7 @@ should target the host service on port `8088`; TLS stays at Cloudflare.
 | Dash | `Shift` or `K` |
 | Attack | `J` or `X` |
 | Pause | `Esc` |
+| Music | `M` |
 
 ## Level
 

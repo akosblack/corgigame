@@ -26,11 +26,14 @@
   let collected = 0;
   let checkpointReached = false;
   let checkpointX = 2440;
+  let audioContext;
+  let musicTimer;
+  let musicOn = true;
 
   const player = {
-    x: 150, y: 470, w: 54, h: 62, vx: 0, vy: 0, face: 1, grounded: false,
+    x: 150, y: 450, w: 72, h: 82, vx: 0, vy: 0, face: 1, grounded: false,
     coyote: 0, jumpBuffer: 0, dash: 0, dashCooldown: 0, attack: 0, invuln: 0,
-    hp: 5, maxHp: 5, spawnX: 150, spawnY: 470, anim: 0
+    hp: 8, maxHp: 8, spawnX: 150, spawnY: 450, anim: 0
   };
 
   const platforms = [
@@ -77,7 +80,7 @@
     checkpointReached = false;
     checkpoint.active = false;
     player.spawnX = 150;
-    player.spawnY = 470;
+    player.spawnY = 450;
     player.hp = player.maxHp;
     player.dashCooldown = 0;
     player.invuln = 0;
@@ -125,13 +128,14 @@
   }
 
   function attackBox() {
-    return { x: player.face > 0 ? player.x + player.w - 4 : player.x - 42, y: player.y + 12, w: 46, h: 40 };
+    return { x: player.face > 0 ? player.x + player.w - 4 : player.x - 104, y: player.y + 14, w: 104, h: 58 };
   }
 
   function attack() {
     if (player.attack > 0) return;
-    player.attack = .25;
-    shake = 4;
+    player.attack = .38;
+    shake = 7;
+    playBark();
     const hit = attackBox();
     enemies.forEach(e => {
       if (e.alive && rectsOverlap(hit, e)) {
@@ -139,6 +143,41 @@
         e.vx = player.face * 180;
         addParticles(e.x + e.w / 2, e.y + e.h / 2, "#ffd166", 8);
         if (e.hp <= 0) { e.alive = false; score += 150; }
+      }
+
+      function playBark() {
+        if (!audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(240, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(120, audioContext.currentTime + .12);
+        gain.gain.setValueAtTime(.045, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .13);
+        oscillator.connect(gain).connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + .14);
+      }
+
+      function startMusic() {
+        if (!musicOn) return;
+        audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+        audioContext.resume();
+        if (musicTimer) return;
+        const notes = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23];
+        let step = 0;
+        musicTimer = setInterval(() => {
+          if (mode !== "playing" || !musicOn) return;
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = "square";
+          oscillator.frequency.value = notes[step++ % notes.length];
+          gain.gain.setValueAtTime(.018, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .16);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + .17);
+        }, 240);
       }
     });
     if (boss.alive && rectsOverlap(hit, boss)) {
@@ -219,7 +258,7 @@
       checkpointReached = true;
       checkpoint.active = true;
       player.spawnX = checkpointX + 30;
-      player.spawnY = 430;
+      player.spawnY = 410;
       score += 250;
       addParticles(checkpointX, checkpoint.y, "#7df2a4", 20, 220);
     }
@@ -347,15 +386,22 @@
     if (player.invuln > 0 && Math.floor(player.invuln * 14) % 2 === 0) return;
     const bob = player.grounded ? Math.sin(player.anim * 12) * 2 : 0;
     ctx.save(); ctx.translate(player.x + player.w / 2, player.y + player.h / 2 + bob); ctx.scale(player.face, 1);
-    ctx.fillStyle = "#a94f4c"; ctx.fillRect(-25, -13, 50, 38);
-    ctx.fillStyle = "#e89562"; ctx.fillRect(-31, -24, 56, 38);
-    ctx.fillStyle = "#fff0c7"; ctx.fillRect(-20, -8, 38, 22);
-    ctx.fillStyle = "#241c35"; ctx.fillRect(3, -12, 6, 6); ctx.fillRect(-14, -12, 6, 6);
-    ctx.fillStyle = "#241c35"; ctx.fillRect(8, 2, 8, 5);
-    ctx.fillStyle = "#7b3f4a"; ctx.fillRect(-29, -34, 15, 17); ctx.fillRect(13, -34, 15, 17);
-    ctx.fillStyle = "#ffe29a"; ctx.fillRect(-28, -30, 11, 9); ctx.fillRect(14, -30, 11, 9);
-    ctx.fillStyle = "#f7c66e"; ctx.fillRect(-22, 20, 16, 13); ctx.fillRect(9, 20, 16, 13);
-    if (player.attack > 0) { ctx.fillStyle = "#fff0a6"; ctx.fillRect(27, -11, 28, 8); ctx.fillRect(49, -18, 9, 22); }
+    ctx.fillStyle = "#8d3f43"; ctx.fillRect(-32, -14, 64, 48);
+    ctx.fillStyle = "#e58a5b"; ctx.fillRect(-40, -32, 72, 48);
+    ctx.fillStyle = "#fff0c7"; ctx.fillRect(-27, -12, 50, 30);
+    ctx.fillStyle = "#241c35"; ctx.fillRect(7, -17, 8, 8); ctx.fillRect(-18, -17, 8, 8);
+    ctx.fillStyle = "#241c35"; ctx.fillRect(12, 4, 11, 7);
+    ctx.fillStyle = "#743843"; ctx.fillRect(-38, -45, 20, 23); ctx.fillRect(15, -45, 21, 23);
+    ctx.fillStyle = "#ffe29a"; ctx.fillRect(-36, -40, 15, 13); ctx.fillRect(18, -40, 15, 13);
+    ctx.fillStyle = "#f7c66e"; ctx.fillRect(-29, 25, 22, 17); ctx.fillRect(12, 25, 22, 17);
+    ctx.fillStyle = "#bd4f5c"; ctx.fillRect(-42, 19, 12, 10);
+    if (player.attack > 0) {
+      ctx.fillStyle = "#ff8fa3";
+      ctx.fillRect(30, -1, 68, 13);
+      ctx.fillRect(84, -7, 18, 24);
+      ctx.fillStyle = "#fff0a6";
+      ctx.fillRect(30, -6, 9, 22);
+    }
     ctx.restore();
   }
 
@@ -367,7 +413,7 @@
     ctx.fillStyle = "#3a2948"; ctx.fillRect(850, 32, 150, 18);
     ctx.fillStyle = "#ff6b6b"; ctx.fillRect(850, 32, 150 * player.hp / player.maxHp, 18);
     ctx.fillStyle = "#fff4d6"; ctx.fillText("HP", 815, 47);
-    ctx.fillStyle = "#a9b8d7"; ctx.font = "14px monospace"; ctx.fillText("ESC pause", 1090, 47);
+    ctx.fillStyle = "#a9b8d7"; ctx.font = "14px monospace"; ctx.fillText(`ESC pause · M music ${musicOn ? "on" : "off"}`, 1040, 47);
   }
 
   function frame(now) {
@@ -389,8 +435,14 @@
     }
   });
   window.addEventListener("keyup", event => keys.delete(event.code));
-  document.querySelector("#start-button").addEventListener("click", reset);
+  document.querySelector("#start-button").addEventListener("click", () => { reset(); startMusic(); });
   document.querySelector("#restart-button").addEventListener("click", reset);
+  window.addEventListener("keydown", event => {
+    if (event.code === "KeyM") {
+      musicOn = !musicOn;
+      if (musicOn) startMusic();
+    }
+  });
   resize();
   requestAnimationFrame(frame);
 })();
