@@ -1,0 +1,7 @@
+services:
+  corgi-game:
+    build: .
+    container_name: corgi-game
+    restart: unless-stopped
+    ports:
+      - "8088:80"

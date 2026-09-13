@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corgi Quest: Park Patrol</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game-shell">
+    <canvas id="game" aria-label="Corgi Quest platform game"></canvas>
+    <section id="start-screen" class="screen">
+      <p class="eyebrow">WAGTAIL WOODS</p>
+      <h1>Corgi Quest</h1>
+      <p>Park Patrol</p>
+      <button id="start-button">Start Adventure</button>
+      <small>Move: A/D or arrows · Jump: Space/W · Dash: Shift · Attack: J/X</small>
+    </section>
+    <section id="pause-screen" class="screen hidden">
+      <h2>Paused</h2>
+      <p>Press <b>Esc</b> to continue.</p>
+    </section>
+    <section id="end-screen" class="screen hidden">
+      <p class="eyebrow" id="end-eyebrow">PARK PATROL COMPLETE</p>
+      <h2 id="end-title">Good dog!</h2>
+      <p id="end-copy"></p>
+      <button id="restart-button">Play Again</button>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
